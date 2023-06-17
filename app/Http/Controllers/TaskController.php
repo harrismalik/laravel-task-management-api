@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Task;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 
 class TaskController extends Controller
 {
@@ -29,7 +31,6 @@ class TaskController extends Controller
      */
     public function create()
     {
-        // dd('endpoint hit');
         return view('tasks.create');
     }
 
@@ -48,7 +49,9 @@ class TaskController extends Controller
                 'completed' => 'boolean',
             ]);
     
-            Task::create($validatedData);
+            $task = new Task($validatedData);
+            $task->user_id = Auth::id();
+            $task->save();
             return redirect()->route('tasks.index')->with('success', 'Task created');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to create the task..!');
@@ -81,6 +84,9 @@ class TaskController extends Controller
                 'description' => 'nullable',
                 'completed' => 'boolean',
             ]);
+            if ($task->user_id !== Auth::id()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
             $task->update($validatedData);
             return redirect()->route('tasks.index')->with('success', 'Task updated');
         } catch (\Exception $e) {
